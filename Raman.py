@@ -30,7 +30,7 @@ class Raman:
         Interpolates intensity values for a specific target wavelength given known wavelengths and their corresponding intensities.
         """
         return np.interp(target_wavelength * 1e9, self.wavelengths, self.intensities)
- 
+
     def partition_function(self) -> float:
         """
         Computes the partition function Z to normalize the population distribution.
@@ -84,7 +84,7 @@ class Raman:
         plt.legend()
         plt.grid(True)
 
-    def plot_Nj(self):
+    def draw_n_J(self):
         J_values = range(self.max_J)  # Quantum numbers from 0 to max_J
         n_J_values = [self.n_J(J) for J in J_values]  # Population for each J
 
@@ -105,5 +105,5 @@ path = 'Fct_instrument/Fct_instrument_1BIN_2400g.csv'
 raman = Raman(path, B_ev, T)
 
 raman.draw_raman_spectra(center_wavelength)
-#raman.plot_Nj()
+raman.draw_n_J()
 plt.show()
