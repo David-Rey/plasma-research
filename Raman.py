@@ -76,7 +76,7 @@ class Raman:
         wavelength_arr = np.linspace(lambda_nm-plot_width, lambda_nm+plot_width, num_points) * 1e-9  # Wavelength range in meters
         intensity_arr = [self.raman_intensity(w, lambda_i) for w in wavelength_arr]
 
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(9, 5))
         plt.plot(wavelength_arr * 1e9, intensity_arr, label='Raman Intensity')
         plt.xlabel('Wavelength (nm)')
         plt.ylabel('Intensity')
@@ -88,7 +88,7 @@ class Raman:
         J_values = range(self.max_J)  # Quantum numbers from 0 to max_J
         n_J_values = [self.n_J(J) for J in J_values]  # Population for each J
 
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(9, 5))
         plt.plot(J_values, n_J_values, marker='o')
         plt.xlabel('Quantum Number J')
         plt.ylabel('Population nJ')
@@ -96,14 +96,15 @@ class Raman:
         plt.grid(True)
 
 
-# Experimental parameters
-B_ev = 2.48e-4  # Energy in eV
-T = 288.15  # Temperature in K
-center_wavelength = 532  # Incident light wavelength in nm
+if __name__ == "__main__":
+    # Experimental parameters
+    B_ev = 2.48e-4  # Energy in eV
+    T = 288.15  # Temperature in K
+    center_wavelength = 532  # Incident light wavelength in nm
 
-path = 'Fct_instrument/Fct_instrument_1BIN_2400g.csv'
-raman = Raman(path, B_ev, T)
+    path = 'Fct_instrument/Fct_instrument_1BIN_2400g.csv'
+    raman = Raman(path, B_ev, T)
 
-raman.draw_raman_spectra(center_wavelength)
-raman.draw_n_J()
-plt.show()
+    raman.draw_raman_spectra(center_wavelength)
+    raman.draw_n_J()
+    plt.show()
