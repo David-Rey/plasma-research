@@ -73,7 +73,8 @@ class Raman:
         """
         lambda_i = lambda_nm * 1e-9  # Convert nm to meters
 
-        wavelength_arr = np.linspace(lambda_nm-plot_width, lambda_nm+plot_width, num_points) * 1e-9  # Wavelength range in meters
+        wavelength_arr = np.linspace(lambda_nm - plot_width, lambda_nm + plot_width,
+                                     num_points) * 1e-9  # Wavelength range in meters
         intensity_arr = [self.raman_intensity(w, lambda_i) for w in wavelength_arr]
 
         plt.figure(figsize=(9, 5))
@@ -95,6 +96,13 @@ class Raman:
         plt.title(f'Population Distribution n_J vs. J at T={self.T}K, B={self.B:.2e} J')
         plt.grid(True)
 
+    def draw_intensity(self):
+        plt.figure(figsize=(9, 5))
+        plt.plot(self.wavelengths, self.intensities)
+        plt.xlabel('Wavelength (nm)')
+        plt.ylabel('Intensity')
+        plt.grid(True)
+
 
 if __name__ == "__main__":
     # Experimental parameters
@@ -107,4 +115,5 @@ if __name__ == "__main__":
 
     raman.draw_raman_spectra(center_wavelength)
     raman.draw_n_J()
+    raman.draw_intensity()
     plt.show()
