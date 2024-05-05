@@ -20,8 +20,9 @@ class Raman:
         self.h = 6.62607015e-34  # Planck's constant in J*s
         self.c = 299792458  # Speed of light in m/s
         self.k = 1.380649e-23  # Boltzmann's constant in J/K
-        self.d_sigma_d_omega = 0.038e-32  # Differential cross-section (assumed constant)
+        self.gamma_squared = 0.505E-48
         self.Q = self.partition_function()
+        self.center_intensity_function = 5.32E-7
 
         self.n = 1  # Density
 
@@ -59,11 +60,22 @@ class Raman:
         for J in range(1, num_iterations):  # Sum over J from 0 to num_iterations
             lambda_J_P2 = lambda_i + ((lambda_i ** 2) / (self.h * self.c)) * self.B * (4 * J + 6)
             lambda_J_M2 = lambda_i - ((lambda_i ** 2) / (self.h * self.c)) * self.B * (4 * J - 2)
+            b_J_P2 = (3 * (J + 1) * (J + 2)) / (2 * (2 * J + 1) * (2 * J + 3))
+            b_J_M2 = (3 * J * (J - 1)) / (2 * (2 * J + 1) * (2 * J - 1))
             n_J = self.n_J(J)
-            for l in [lambda_J_P2, lambda_J_M2]:
-                wavelength_j = wavelength - l + lambda_i
-                intensity = self.interpolate_intensity(wavelength_j)
-                intensity_RM += n_J / self.n * self.d_sigma_d_omega * intensity
+
+            lambda_arr = [lambda_J_P2, lambda_J_M2]
+            b_j_arr = [b_J_P2, b_J_M2]
+            for i in range(2):
+                l = lambda_arr[i]  # wavelength
+                b_J = b_j_arr[i]
+
+                omega = 1 / (1E2 * l)  # this is omega_0 plus the delta
+                d_sigma_d_omega = 64 * np.pi**4 * b_J * omega ** 4 * self.gamma_squared
+
+                wavelength_j = wavelength - l
+                intensity = self.interpolate_intensity(wavelength_j + self.center_intensity_function)
+                intensity_RM += n_J / self.n * d_sigma_d_omega * intensity
 
         return intensity_RM
 
@@ -114,6 +126,6 @@ if __name__ == "__main__":
     raman = Raman(path, B_ev, T)
 
     raman.draw_raman_spectra(center_wavelength)
-    raman.draw_n_J()
-    raman.draw_intensity()
+   # raman.draw_n_J()
+   #raman.draw_intensity()
     plt.show()
