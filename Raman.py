@@ -22,7 +22,7 @@ class Raman:
         self.k = 1.380649e-23  # Boltzmann's constant in J/K
         self.gamma_squared = 0.505E-48
         self.Q = self.partition_function()
-        self.center_intensity_function = 5.32E-7
+        self.center_intensity_function = 5.321E-7
 
         self.n = 1  # Density
 
@@ -126,6 +126,6 @@ if __name__ == "__main__":
     raman = Raman(path, B_ev, T)
 
     raman.draw_raman_spectra(center_wavelength)
-   # raman.draw_n_J()
-   #raman.draw_intensity()
+    #raman.draw_n_J()
+    #raman.draw_intensity()
     plt.show()
