@@ -93,6 +93,13 @@ class RamanSpec:
 
         return intensity_RM
 
+    def generate_raman(self, wavelengths: np.ndarray, center_wavelength: float) -> np.ndarray:
+        """
+        Generates a list of Raman intensity values.
+        """
+        i = [self.raman_intensity(w, center_wavelength) for w in wavelengths]
+        return np.array(i)
+
     def draw_raman_spectra(self, lambda_nm: float, plot_width=5, num_points=500):
         """
         Plots Raman spectra within a specified wavelength range.

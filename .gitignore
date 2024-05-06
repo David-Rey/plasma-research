@@ -1,2 +1,4 @@
 *.idea
 test_scripts/
+__pycache__/
+/report.log
