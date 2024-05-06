@@ -3,28 +3,42 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-class Raman:
-    def __init__(self, data_path: str, B_ev: float, T: float, max_J=30):
+class RamanSpec:
+    """
+    A class to analyze Raman spectra data, calculate Raman intensities, and visualize the spectral data.
+    """
+
+    def __init__(self, data_path: str, B_ev: float, temperature: float, max_J=30):
+        """
+        Initializes the Raman class with data path, rotational constant, temperature, and maximum J value.
+        """
         self.data_path = data_path
         self.data = pd.read_csv(data_path)
         self.wavelengths, self.intensities = self.data.iloc[:, 0], self.data.iloc[:, 1]
 
         self.max_J = max_J
-
-        ev_to_J = 1.60218e-19
-
-        self.B = B_ev * ev_to_J
-        self.T = T
+        self.B = B_ev * 1.60218e-19  # Conversion from eV to Joules
+        self.T = temperature
 
         # Constants
         self.h = 6.62607015e-34  # Planck's constant in J*s
         self.c = 299792458  # Speed of light in m/s
         self.k = 1.380649e-23  # Boltzmann's constant in J/K
         self.gamma_squared = 0.505E-48
-        self.Q = self.partition_function()
-        self.center_intensity_function = 5.321E-7
 
-        self.n = 1  # Density
+        # Calculate partition function and instrument function properties
+        self.Q = self.partition_function()
+        self.center_instrument_function, self.max_instrument_function = self.calculate_center_instrument_func()
+        self.n = 1  # Density (could be parameterized or set externally if needed)
+
+    def calculate_center_instrument_func(self):
+        """
+        Function to calculate the center and max value instrument function.
+        """
+        max_index = self.intensities.idxmax()  # Get the index of the maximum intensity
+        max_value = self.intensities[max_index]  # Get the maximum intensity value using the index
+        wavelength = self.wavelengths[max_index]  # Get the wavelength corresponding to the maximum intensity
+        return wavelength * 1E-9, max_value
 
     def interpolate_intensity(self, target_wavelength):
         """
@@ -71,10 +85,10 @@ class Raman:
                 b_J = b_j_arr[i]
 
                 omega = 1 / (1E2 * l)  # this is omega_0 plus the delta
-                d_sigma_d_omega = 64 * np.pi**4 * b_J * omega ** 4 * self.gamma_squared
+                d_sigma_d_omega = 64 * np.pi ** 4 * b_J * omega ** 4 * self.gamma_squared
 
                 wavelength_j = wavelength - l
-                intensity = self.interpolate_intensity(wavelength_j + self.center_intensity_function)
+                intensity = self.interpolate_intensity(wavelength_j + self.center_instrument_function)
                 intensity_RM += n_J / self.n * d_sigma_d_omega * intensity
 
         return intensity_RM
@@ -110,7 +124,11 @@ class Raman:
 
     def draw_intensity(self):
         plt.figure(figsize=(9, 5))
+        plt.plot([self.center_instrument_function * 1E9, self.center_instrument_function * 1E9],
+                 [0, self.max_instrument_function], '--', color=[0.5, 0.5, 0.5])
         plt.plot(self.wavelengths, self.intensities)
+        plt.plot(self.center_instrument_function * 1E9, self.max_instrument_function, marker='o', color='r')
+
         plt.xlabel('Wavelength (nm)')
         plt.ylabel('Intensity')
         plt.grid(True)
@@ -123,9 +141,9 @@ if __name__ == "__main__":
     center_wavelength = 532  # Incident light wavelength in nm
 
     path = 'Fct_instrument/Fct_instrument_1BIN_2400g.csv'
-    raman = Raman(path, B_ev, T)
+    raman = RamanSpec(path, B_ev, T)
 
-    raman.draw_raman_spectra(center_wavelength)
+    raman.draw_raman_spectra(center_wavelength, plot_width=4)
     #raman.draw_n_J()
     #raman.draw_intensity()
     plt.show()
