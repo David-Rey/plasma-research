@@ -58,7 +58,7 @@ class Optimize:
         test_intensity = (self.gen_intensity * scale) + y
 
         comp_intensity = np.interp(self.real_wavelength, test_wavelength, test_intensity)
-        mse = (np.mean((comp_intensity - self.real_intensity) ** 2))
+        mse = np.mean(comp_intensity - self.real_intensity ** 2)
 
         return mse
 
@@ -141,7 +141,7 @@ class Optimize:
 
 if __name__ == '__main__':
     # Define paths
-    raw_data_path = 'raw_data/17_02_49.txt'
+    raw_data_path = 'raw_data/17_05_33.txt'
     instrument_fct_path = 'Fct_instrument/Fct_instrument_1BIN_2400g.csv'
 
     B_ev = 2.48e-4  # Energy in eV
@@ -151,9 +151,7 @@ if __name__ == '__main__':
     options = {'c1': 1.4, 'c2': 1.4, 'w': 0.7}
     opt = Optimize(raw_data_path, instrument_fct_path, B_ev, T, center_wavelength, options)
 
-    cost3d, pos3d = opt.optimize_3d()
-
-    y = pos3d[2]
+    y = opt.read_raman.min_intensity
     cost, pos = opt.optimize_2d(y, show_cost=False)
 
     scale = pos[0]
