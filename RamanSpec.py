@@ -7,7 +7,6 @@ class RamanSpec:
     """
     A class to analyze Raman spectra data, calculate Raman intensities, and visualize the spectral data.
     """
-
     def __init__(self, data_path: str, B_ev: float, temperature: float, center_wavelength: float, max_J=30):
         """
         Initializes the Raman class with data path, rotational constant, temperature, and maximum J value.

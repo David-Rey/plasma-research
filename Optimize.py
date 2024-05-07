@@ -52,7 +52,7 @@ class Optimize:
         generates priority function that multiples with the error. This priorities the peaks of the raman function.
         :return:
         """
-        a1 = 200
+        a1 = 150
         a2 = .15
         priority_function = np.zeros_like(self.real_wavelength)
         for i in range(len(self.real_wavelength)):
@@ -75,16 +75,6 @@ class Optimize:
         mse = np.zeros(num_partials)
         for i in range(num_partials):
             mse[i] = self.error_func(x[i, 0], x[i, 1], y)
-        return mse
-
-    def objective_func_3d(self, x: np.ndarray) -> np.ndarray:
-        """
-        Objective function for 3D optimization to compute mean squared error across multiple particles.
-        """
-        num_partials = np.size(x, 0)
-        mse = np.zeros(num_partials)
-        for i in range(num_partials):
-            mse[i] = self.error_func(x[i, 0], x[i, 1], x[i, 2])
         return mse
 
     def error_func(self, scale, shift, y) -> float:
@@ -117,25 +107,6 @@ class Optimize:
 
         kwargs = {'y': y}
         cost, pos = optimizer.optimize(self.objective_func_2d, num_iterations, **kwargs)
-        if show_cost:
-            plot_cost_history(cost_history=optimizer.cost_history)
-            plt.grid(True)
-        return cost, pos
-
-    def optimize_3d(self, show_cost=False):
-        """
-        Conducts 3D optimization using PSO.
-        """
-        # instantiate the optimizer
-        x_min = [self.min_scale, self.min_phase_shift, self.min_y]
-        x_max = [self.max_scale, self.max_phase_shift, self.max_y]
-        num_particles = 500
-        num_iterations = 50
-
-        bounds = (x_min, x_max)
-        optimizer = GlobalBestPSO(n_particles=num_particles, dimensions=3, options=self.pso_options, bounds=bounds)
-
-        cost, pos = optimizer.optimize(self.objective_func_3d, num_iterations)
         if show_cost:
             plot_cost_history(cost_history=optimizer.cost_history)
             plt.grid(True)
@@ -215,6 +186,5 @@ if __name__ == '__main__':
     opt.draw_overlay(scale, shift, y)
     opt.draw_contour(y, pos)
     opt.draw_priority_func()
-    print(cost)
 
     plt.show()
