@@ -8,13 +8,15 @@ class RamanSpec:
     A class to analyze Raman spectra data, calculate Raman intensities, and visualize the spectral data.
     """
 
-    def __init__(self, data_path: str, B_ev: float, temperature: float, max_J=30):
+    def __init__(self, data_path: str, B_ev: float, temperature: float, center_wavelength: float, max_J=30):
         """
         Initializes the Raman class with data path, rotational constant, temperature, and maximum J value.
         """
         self.data_path = data_path
         self.data = pd.read_csv(data_path)
         self.wavelengths, self.intensities = self.data.iloc[:, 0], self.data.iloc[:, 1]
+        self.lambda_nm = center_wavelength
+        self.lambda_i = center_wavelength * 1E-9
 
         self.max_J = max_J
         self.B = B_ev * 1.60218e-19  # Conversion from eV to Joules
@@ -30,6 +32,12 @@ class RamanSpec:
         self.Q = self.partition_function()
         self.center_instrument_function, self.max_instrument_function = self.calculate_center_instrument_func()
         self.n = 1  # Density (could be parameterized or set externally if needed)
+
+        self.peak_lambdas = np.zeros(2 * self.max_J - 2)
+        self.peak_intensities = np.zeros(2 * self.max_J - 2)
+
+        self.wavelength_arr = np.empty(1)
+        self.intensity_arr = np.empty(1)
 
     def calculate_center_instrument_func(self):
         """
@@ -66,14 +74,28 @@ class RamanSpec:
         n_J = self.n / self.Q * g_J * (2 * J + 1) * np.exp(-E_J / (self.k * self.T))
         return n_J
 
-    def raman_intensity(self, wavelength: float, lambda_i: float, num_iterations=30) -> float:
+    def generate_peak_wavelengths(self):
+        """
+        Generates peaks of raman spectrum.
+        """
+        for J in range(1, self.max_J):  # Sum over J from 0 to num_iterations
+            lambda_J_P2 = self.lambda_i + ((self.lambda_i ** 2) / (self.h * self.c)) * self.B * (4 * J + 6)
+            lambda_J_M2 = self.lambda_i - ((self.lambda_i ** 2) / (self.h * self.c)) * self.B * (4 * J - 2)
+
+            self.peak_lambdas[2 * J - 2] = lambda_J_P2
+            self.peak_lambdas[2 * J - 1] = lambda_J_M2
+
+            self.peak_intensities[2 * J - 2] = self.raman_intensity(lambda_J_P2)
+            self.peak_intensities[2 * J - 1] = self.raman_intensity(lambda_J_M2)
+
+    def raman_intensity(self, wavelength: float) -> float:
         """
         Calculates the Raman intensity for a given wavelength, accounting for both Stokes and anti-Stokes contributions.
         """
         intensity_RM = 0
-        for J in range(1, num_iterations):  # Sum over J from 0 to num_iterations
-            lambda_J_P2 = lambda_i + ((lambda_i ** 2) / (self.h * self.c)) * self.B * (4 * J + 6)
-            lambda_J_M2 = lambda_i - ((lambda_i ** 2) / (self.h * self.c)) * self.B * (4 * J - 2)
+        for J in range(1, self.max_J):  # Sum over J from 0 to num_iterations
+            lambda_J_P2 = self.lambda_i + ((self.lambda_i ** 2) / (self.h * self.c)) * self.B * (4 * J + 6)
+            lambda_J_M2 = self.lambda_i - ((self.lambda_i ** 2) / (self.h * self.c)) * self.B * (4 * J - 2)
             b_J_P2 = (3 * (J + 1) * (J + 2)) / (2 * (2 * J + 1) * (2 * J + 3))
             b_J_M2 = (3 * J * (J - 1)) / (2 * (2 * J + 1) * (2 * J - 1))
             n_J = self.n_J(J)
@@ -93,25 +115,23 @@ class RamanSpec:
 
         return intensity_RM
 
-    def generate_raman(self, wavelengths: np.ndarray, center_wavelength: float) -> np.ndarray:
+    def generate_raman(self, num_points: int, spec_width=4):
         """
         Generates a list of Raman intensity values.
         """
-        i = [self.raman_intensity(w, center_wavelength) for w in wavelengths]
-        return np.array(i)
+        self.generate_peak_wavelengths()
+        self.wavelength_arr = np.linspace(self.lambda_nm - spec_width, self.lambda_nm + spec_width,
+                                          num_points) * 1e-9  # Wavelength range in meters
+        self.intensity_arr = np.array([self.raman_intensity(w) for w in self.wavelength_arr])
 
-    def draw_raman_spectra(self, lambda_nm: float, plot_width=5, num_points=500):
+    def draw_raman_spectra(self):
         """
         Plots Raman spectra within a specified wavelength range.
         """
-        lambda_i = lambda_nm * 1e-9  # Convert nm to meters
-
-        wavelength_arr = np.linspace(lambda_nm - plot_width, lambda_nm + plot_width,
-                                     num_points) * 1e-9  # Wavelength range in meters
-        intensity_arr = [self.raman_intensity(w, lambda_i) for w in wavelength_arr]
-
         plt.figure(figsize=(9, 5))
-        plt.plot(wavelength_arr * 1e9, intensity_arr, label='Raman Intensity')
+        plt.plot(self.wavelength_arr * 1e9, self.intensity_arr, label='Raman Intensity')
+        plt.plot(self.peak_lambdas * 1e9, self.peak_intensities, 'ro')
+        plt.xlim([self.wavelength_arr[0] * 1e9, self.wavelength_arr[-1] * 1e9])
         plt.xlabel('Wavelength (nm)')
         plt.ylabel('Intensity')
         plt.title('Raman Intensity vs. Wavelength')
@@ -148,9 +168,12 @@ if __name__ == "__main__":
     center_wavelength = 532  # Incident light wavelength in nm
 
     path = 'Fct_instrument/Fct_instrument_1BIN_2400g.csv'
-    raman = RamanSpec(path, B_ev, T)
+    raman = RamanSpec(path, B_ev, T, center_wavelength)
 
-    raman.draw_raman_spectra(center_wavelength, plot_width=4)
+    raman.generate_raman(1000)
+
+    raman.draw_raman_spectra()
+
     #raman.draw_n_J()
     #raman.draw_intensity()
     plt.show()

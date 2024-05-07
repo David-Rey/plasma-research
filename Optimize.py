@@ -1,8 +1,7 @@
-from pyswarms.single.global_best import GlobalBestPSO
-from pyswarms.utils.plotters import plot_cost_history
-
 import numpy as np
 from matplotlib import pyplot as plt
+from pyswarms.single.global_best import GlobalBestPSO
+from pyswarms.utils.plotters import plot_cost_history
 
 from ReadRamanSpec import ReadRamanSpec
 from RamanSpec import RamanSpec
@@ -12,37 +11,61 @@ class Optimize:
     """
     A class to optimize parameters for Raman spectrum analysis using Particle Swarm Optimization.
     """
+
     def __init__(self, data_path: str, instrument_path: str, B_ev: float, temperature: float, center_wavelength: float,
                  pso_options: dict) -> None:
         """
         Initializes the optimization setup with provided parameters and paths.
         """
         self.min_scale = 1E28
-        self.max_scale = 3E28
-        self.min_phase_shift = -1
-        self.max_phase_shift = 1
+        self.max_scale = 5E28
+        self.min_phase_shift = -0.8
+        self.max_phase_shift = 0.8
         self.min_y = 1E4
         self.max_y = 3E4
 
         self.center_wavelength = center_wavelength
 
         self.read_raman = ReadRamanSpec(data_path)
-        self.raman = RamanSpec(instrument_path, B_ev, temperature)
+        self.raman = RamanSpec(instrument_path, B_ev, temperature, center_wavelength)
 
         self.real_wavelength = self.read_raman.wavelength
         self.real_intensity = self.read_raman.intensity
 
         self.gen_wavelength = np.linspace(self.read_raman.min_wavelength + self.min_phase_shift,
                                           self.read_raman.max_wavelength + self.max_phase_shift, 1000)
-        self.gen_intensity = self.raman.generate_raman(self.gen_wavelength * 1E-9, center_wavelength * 1E-9)
+        self.raman.generate_raman(1000)
+        self.gen_intensity = self.raman.intensity_arr
 
         self.pso_options = pso_options
+
+        self.priority_function = self.gen_priority_function()
 
     def interpolate_intensity(self, real_wavelengths: np.ndarray) -> np.ndarray:
         """
         Interpolates intensity values for a specific target wavelength given known wavelengths and their corresponding intensities.
         """
         return np.interp(real_wavelengths, self.gen_wavelength, self.gen_intensity)
+
+    def gen_priority_function(self):
+        """
+        generates priority function that multiples with the error. This priorities the peaks of the raman function.
+        :return:
+        """
+        a1 = 200
+        a2 = .15
+        priority_function = np.zeros_like(self.real_wavelength)
+        for i in range(len(self.real_wavelength)):
+            for l in self.raman.peak_lambdas:
+                wavelength = self.real_wavelength[i]
+                k1 = wavelength - (l * 1E9)
+                priority_function[i] += np.exp(-a1 * k1 ** 2)
+
+        for i in range(len(self.real_wavelength)):
+            wavelength = self.real_wavelength[i]
+            k2 = wavelength - self.center_wavelength
+            priority_function[i] *= np.exp(-a2 * k2 ** 2)
+        return priority_function
 
     def objective_func_2d(self, x: np.ndarray, y: float) -> np.ndarray:
         """
@@ -72,7 +95,9 @@ class Optimize:
         test_intensity = (self.gen_intensity * scale) + y
 
         comp_intensity = np.interp(self.real_wavelength, test_wavelength, test_intensity)
-        mse = np.mean((comp_intensity - self.real_intensity) ** 2)
+        diff = comp_intensity - self.real_intensity
+        diff_adj = diff * self.priority_function
+        mse = np.mean(diff_adj ** 2)
 
         return mse
 
@@ -137,14 +162,14 @@ class Optimize:
         Draws a contour map of the optimization landscape.
         """
         # Define the bounds for scale and shift
-        x_min = [self.min_scale, self.min_phase_shift]
-        x_max = [self.max_scale, self.max_phase_shift]
+        x_min = [self.min_phase_shift, self.min_scale]
+        x_max = [self.max_phase_shift, self.max_scale]
 
         # Create a mesh grid for the parameters
         n = 150
-        scale_values = np.linspace(x_min[0], x_max[0], n)
-        shift_values = np.linspace(x_min[1], x_max[1], n)
-        Scale, Shift = np.meshgrid(scale_values, shift_values)
+        shift_values = np.linspace(x_min[0], x_max[0], n)
+        scale_values = np.linspace(x_min[1], x_max[1], n)
+        Shift, Scale = np.meshgrid(shift_values, scale_values)
 
         # Evaluate the objective function at each point in the grid
         Z = np.zeros_like(Scale)
@@ -154,21 +179,28 @@ class Optimize:
 
         # Plot the contour map
         plt.figure(figsize=(10, 8))
-        cp = plt.contourf(Scale, Shift, Z, levels=50, cmap='viridis')
+        cp = plt.contourf(Shift, Scale, Z, levels=50, cmap='viridis')
         plt.colorbar(cp)
-        plt.plot(pos[0], pos[1], 'ro')
-        plt.xlabel('Scale')
-        plt.ylabel('Shift')
+        plt.plot(pos[1], pos[0], 'ro')
+        plt.xlabel('Shift')
+        plt.ylabel('Scale')
+        plt.grid(True)
+
+    def draw_priority_func(self):
+        plt.figure(figsize=(9, 6))
+        plt.plot(self.real_wavelength, self.priority_function)
+        plt.xlabel('Wavelength (nm)')
+        plt.title("Priority Function")
         plt.grid(True)
 
 
 if __name__ == '__main__':
     # Define paths
-    raw_data_path = 'raw_data/17_05_33.txt'
+    raw_data_path = 'raw_data/17_01_19.txt'
     instrument_fct_path = 'Fct_instrument/Fct_instrument_1BIN_2400g.csv'
 
     B_ev = 2.48e-4  # Energy in eV
-    T = 250.15  # Temperature in K
+    T = 288.15  # Temperature in K
     center_wavelength = 532  # Incident light wavelength in nm
 
     options = {'c1': 1.4, 'c2': 1.4, 'w': 0.7}
@@ -182,6 +214,7 @@ if __name__ == '__main__':
 
     opt.draw_overlay(scale, shift, y)
     opt.draw_contour(y, pos)
+    opt.draw_priority_func()
     print(cost)
 
     plt.show()
