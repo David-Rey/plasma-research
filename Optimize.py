@@ -72,7 +72,7 @@ class Optimize:
         test_intensity = (self.gen_intensity * scale) + y
 
         comp_intensity = np.interp(self.real_wavelength, test_wavelength, test_intensity)
-        mse = np.mean(comp_intensity - self.real_intensity ** 2)
+        mse = np.mean((comp_intensity - self.real_intensity) ** 2)
 
         return mse
 
