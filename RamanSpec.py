@@ -144,7 +144,7 @@ class RamanSpec:
 if __name__ == "__main__":
     # Experimental parameters
     B_ev = 2.48e-4  # Energy in eV
-    T = 288.15  # Temperature in K
+    T = 300.15  # Temperature in K
     center_wavelength = 532  # Incident light wavelength in nm
 
     path = 'Fct_instrument/Fct_instrument_1BIN_2400g.csv'

@@ -7,12 +7,14 @@ class ReadRamanSpec:
     """
     A class to read and process Raman spectroscopy data from a specified file.
     """
-    def __init__(self, path: str):
+    def __init__(self, path: str, shift=True):
         """
         Initializes the ReadRamanSpec object by reading and processing the data from the given file path.
         """
         self.path = path
         self.metadata, self.wavelength, self.intensity = self.read_data()
+        if shift:
+            self.wavelength = self.wavelength + 2
         self.max_intensity = np.max(self.intensity)
         self.min_intensity = np.min(self.intensity)
         self.min_wavelength = np.min(self.wavelength)
@@ -36,7 +38,7 @@ class ReadRamanSpec:
 
             # Convert data to appropriate types
             wavelength = split_data[:, 0].astype(float)  # left part
-            intensity = split_data[:, 1].astype(int)  # right part
+            intensity = split_data[:, 1].astype(float)  # right part
 
             return metadata, wavelength, intensity
         except Exception as e:
@@ -46,12 +48,14 @@ class ReadRamanSpec:
         """
         Draws the spectrum on the plot.
         """
+        plt.figure(figsize=(8, 6))
         plt.plot(self.wavelength, self.intensity)
+        plt.xlabel('Wavelength (nm)')
         plt.grid(True)
 
 
 if __name__ == "__main__":
-    path = 'raw_data/17_01_19.txt'
+    path = 'raw_data/17_05_33.txt'
     spec = ReadRamanSpec(path)
 
     spec.draw_spectrum()
