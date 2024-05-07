@@ -9,9 +9,14 @@ from RamanSpec import RamanSpec
 
 
 class Optimize:
+    """
+    A class to optimize parameters for Raman spectrum analysis using Particle Swarm Optimization.
+    """
     def __init__(self, data_path: str, instrument_path: str, B_ev: float, temperature: float, center_wavelength: float,
                  pso_options: dict) -> None:
-
+        """
+        Initializes the optimization setup with provided parameters and paths.
+        """
         self.min_scale = 1E28
         self.max_scale = 3E28
         self.min_phase_shift = -1
@@ -40,6 +45,9 @@ class Optimize:
         return np.interp(real_wavelengths, self.gen_wavelength, self.gen_intensity)
 
     def objective_func_2d(self, x: np.ndarray, y: float) -> np.ndarray:
+        """
+        Objective function for 2D optimization to compute mean squared error across multiple particles.
+        """
         num_partials = np.size(x, 0)
         mse = np.zeros(num_partials)
         for i in range(num_partials):
@@ -47,13 +55,19 @@ class Optimize:
         return mse
 
     def objective_func_3d(self, x: np.ndarray) -> np.ndarray:
+        """
+        Objective function for 3D optimization to compute mean squared error across multiple particles.
+        """
         num_partials = np.size(x, 0)
         mse = np.zeros(num_partials)
         for i in range(num_partials):
             mse[i] = self.error_func(x[i, 0], x[i, 1], x[i, 2])
         return mse
 
-    def error_func(self, scale, shift, y):
+    def error_func(self, scale, shift, y) -> float:
+        """
+        Calculates the mean squared error between the generated and real intensity data after applying scale and shift.
+        """
         test_wavelength = self.gen_wavelength + shift
         test_intensity = (self.gen_intensity * scale) + y
 
@@ -63,6 +77,9 @@ class Optimize:
         return mse
 
     def optimize_2d(self, y: float, show_cost=False):
+        """
+        Conducts 2D optimization using PSO.
+        """
         # instantiate the optimizer
         x_min = [self.min_scale, self.min_phase_shift]
         x_max = [self.max_scale, self.max_phase_shift]
@@ -81,6 +98,9 @@ class Optimize:
         return cost, pos
 
     def optimize_3d(self, show_cost=False):
+        """
+        Conducts 3D optimization using PSO.
+        """
         # instantiate the optimizer
         x_min = [self.min_scale, self.min_phase_shift, self.min_y]
         x_max = [self.max_scale, self.max_phase_shift, self.max_y]
@@ -113,6 +133,9 @@ class Optimize:
         plt.legend()
 
     def draw_contour(self, y: float, pos: tuple):
+        """
+        Draws a contour map of the optimization landscape.
+        """
         # Define the bounds for scale and shift
         x_min = [self.min_scale, self.min_phase_shift]
         x_max = [self.max_scale, self.max_phase_shift]
