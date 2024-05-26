@@ -26,11 +26,13 @@ class RamanSpec:
         self.c = 299792458  # Speed of light in m/s
         self.k = 1.380649e-23  # Boltzmann's constant in J/K
         self.gamma_squared = 0.505E-48
+        self.power = 4  # Pi power in watts
+        self.wavelength_delta = 0.011563479901496976 * 1E-9  # From raw data (this should be a setter not static!)
 
         # Calculate partition function and instrument function properties
         self.Q = self.partition_function()
         self.center_instrument_function, self.max_instrument_function = self.calculate_center_instrument_func()
-        self.n = 1  # Density (could be parameterized or set externally if needed)
+        self.n = 0.0113  # Density (could be parameterized or set externally if needed)
 
         self.peak_lambdas = np.zeros(2 * self.max_J - 2)
         self.peak_intensities = np.zeros(2 * self.max_J - 2)
@@ -106,11 +108,11 @@ class RamanSpec:
                 b_J = b_j_arr[i]
 
                 omega = 1 / (1E2 * l)  # this is omega_0 plus the delta
-                d_sigma_d_omega = 64 * np.pi ** 4 * b_J * omega ** 4 * self.gamma_squared
+                d_sigma_d_omega = (64 * np.pi ** 4 * b_J * omega ** 4 * self.gamma_squared) / 1E4
 
                 wavelength_j = wavelength - l
                 intensity = self.interpolate_intensity(wavelength_j + self.center_instrument_function)
-                intensity_RM += n_J / self.n * d_sigma_d_omega * intensity
+                intensity_RM += n_J * self.n * self.wavelength_delta * self.power * d_sigma_d_omega * intensity
 
         return intensity_RM
 

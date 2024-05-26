@@ -18,7 +18,7 @@ class Optimize:
         Initializes the optimization setup with provided parameters and paths.
         """
         self.min_scale = 1E28
-        self.max_scale = 5E28
+        self.max_scale = 5E43
         self.min_phase_shift = -0.8
         self.max_phase_shift = 0.8
         self.min_y = 1E4
@@ -41,16 +41,9 @@ class Optimize:
 
         self.priority_function = self.gen_priority_function()
 
-    def interpolate_intensity(self, real_wavelengths: np.ndarray) -> np.ndarray:
-        """
-        Interpolates intensity values for a specific target wavelength given known wavelengths and their corresponding intensities.
-        """
-        return np.interp(real_wavelengths, self.gen_wavelength, self.gen_intensity)
-
-    def gen_priority_function(self):
+    def gen_priority_function(self) -> np.ndarray:
         """
         generates priority function that multiples with the error. This priorities the peaks of the raman function.
-        :return:
         """
         a1 = 150
         a2 = .15
@@ -124,6 +117,7 @@ class Optimize:
         plt.figure(figsize=(9, 6))
         plt.plot(self.real_wavelength, self.real_intensity, label='Real')
         plt.plot(self.real_wavelength, comp_intensity, label='Generated')
+        plt.plot([self.real_wavelength[0], self.real_wavelength[-1]], [y, y], '--')
         plt.xlabel("Wavelength (nm)")
         plt.grid(True)
         plt.legend()
@@ -150,7 +144,7 @@ class Optimize:
 
         # Plot the contour map
         plt.figure(figsize=(10, 8))
-        cp = plt.contourf(Shift, Scale, Z, levels=50, cmap='viridis')
+        cp = plt.contourf(Shift, Scale, Z, levels=30, cmap='viridis')
         plt.colorbar(cp)
         plt.plot(pos[1], pos[0], 'ro')
         plt.xlabel('Shift')
@@ -185,6 +179,6 @@ if __name__ == '__main__':
 
     opt.draw_overlay(scale, shift, y)
     opt.draw_contour(y, pos)
-    opt.draw_priority_func()
+    #opt.draw_priority_func()
 
     plt.show()

@@ -19,6 +19,8 @@ class ReadRamanSpec:
         self.min_intensity = np.min(self.intensity)
         self.min_wavelength = np.min(self.wavelength)
         self.max_wavelength = np.max(self.wavelength)
+        self.wavelength_delta = self.wavelength[1] - self.wavelength[0]
+        print(self.wavelength_delta)
 
     def read_data(self):
         """
